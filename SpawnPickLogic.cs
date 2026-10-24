@@ -9,7 +9,8 @@ namespace MatchZy
         public const float BeamHeight = 100f;
         // How far from the beam the view ray may pass, a bit more than a player's width so the beam is easy to hit.
         public const float AimRadius = 24f;
-        public const float MaxDistance = 4096f;
+        // How far away a spawn can be picked, in units (about 8 m at 1 unit = 1 inch), so use only reaches nearby spawns.
+        public const float MaxDistance = 320f;
 
         // Forward vector for Source angles in degrees (pitch looks down when positive).
         public static Vector3 Forward(float pitch, float yaw)

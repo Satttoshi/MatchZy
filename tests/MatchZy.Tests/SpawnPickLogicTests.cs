@@ -19,7 +19,7 @@ public class SpawnPickLogicTests
     [Fact]
     public void PicksSpawnInFront()
     {
-        var spawns = new List<Vector3> { new(0, 300, 0), new(500, 0, 0) };
+        var spawns = new List<Vector3> { new(0, 250, 0), new(200, 0, 0) };
         Assert.Equal(1, SpawnPickLogic.FindAimedSpawn(Eye, SpawnPickLogic.Forward(0, 0), spawns));
         Assert.Equal(0, SpawnPickLogic.FindAimedSpawn(Eye, SpawnPickLogic.Forward(0, 90), spawns));
     }
@@ -36,7 +36,7 @@ public class SpawnPickLogicTests
     [Fact]
     public void IgnoresSpawnBesideTheView()
     {
-        var spawns = new List<Vector3> { new(500, 60, 0) };
+        var spawns = new List<Vector3> { new(250, 60, 0) };
         Assert.Equal(-1, SpawnPickLogic.FindAimedSpawn(Eye, SpawnPickLogic.Forward(0, 0), spawns));
     }
 
@@ -58,7 +58,7 @@ public class SpawnPickLogicTests
     [Fact]
     public void PicksNearestOfSpawnsInLine()
     {
-        var spawns = new List<Vector3> { new(600, 0, 0), new(300, 0, 0) };
+        var spawns = new List<Vector3> { new(250, 0, 0), new(120, 0, 0) };
         Assert.Equal(1, SpawnPickLogic.FindAimedSpawn(Eye, SpawnPickLogic.Forward(0, 0), spawns));
     }
 
