@@ -75,6 +75,7 @@
   "matchzy.mm.teamcannotbechanged": "隊伍名稱在比賽開始後無法修改！",
   
   "matchzy.pm.movedtospawn": "移動至復活點：{0}",
+  "matchzy.pm.showspawnsuse": "Look at a spawn and press {green}E{default} (use) to teleport there.",
   "matchzy.pm.negativenumber": "{command} 命令的參數不合法。請輸入一個有效的非負數值。使用示例: !{command} <number>",
   "matchzy.pm.lineupissaved": "Lineup 已存在！請使用其他名字或者使用 .delnade <nade>",
   "matchzy.pm.lineupsavedsucces": "Lineup {green}{0}{default} 保存成功！",

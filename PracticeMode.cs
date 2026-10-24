@@ -126,6 +126,9 @@ namespace MatchZy
 
         public Dictionary<byte, List<Position>> spawnsData = GetEmptySpawnsData();
 
+        // Whether the .showspawns beams are up, so pressing use on one teleports to that spawn.
+        private bool spawnBeamsShown;
+
         public Dictionary<byte, List<Position>> coachSpawns = GetEmptySpawnsData();
 
         public const string practiceCfgPath = "MatchZy/prac.cfg";
@@ -240,9 +243,7 @@ namespace MatchZy
                     // Adjusting the spawnNumber according to the array index.
                     spawnNumber -= 1;
                     if (spawnsData.ContainsKey(teamNum) && spawnsData[teamNum].Count <= spawnNumber) return;
-                    player!.PlayerPawn.Value!.Teleport(spawnsData[teamNum][spawnNumber].PlayerPosition, spawnsData[teamNum][spawnNumber].PlayerAngle, new Vector(0, 0, 0));
-                    // ReplyToUserCommand(player, $"Moved to spawn: {spawnNumber+1}/{spawnsData[teamNum].Count}");
-                    ReplyToUserCommand(player, Localizer["matchzy.pm.movedtospawn", $"{spawnNumber + 1}/{spawnsData[teamNum].Count}"]);
+                    TeleportToSpawn(player!, teamNum, spawnNumber);
                 }
                 else
                 {
@@ -750,7 +751,7 @@ namespace MatchZy
 
             beam.EndPos.X = spawn.PlayerPosition.X;
             beam.EndPos.Y = spawn.PlayerPosition.Y;
-            beam.EndPos.Z = spawn.PlayerPosition.Z + 100.0f;
+            beam.EndPos.Z = spawn.PlayerPosition.Z + SpawnPickLogic.BeamHeight;
 
             beam.Teleport(spawn.PlayerPosition, new QAngle(0, 0, 0), new Vector(0, 0, 0));
 
@@ -765,6 +766,41 @@ namespace MatchZy
                 if (beam == null) continue;
                 beam.Remove();
             }
+            spawnBeamsShown = false;
+        }
+
+        // While .showspawns is on, pressing use (E) while looking at a spawn's beam teleports the player to that spawn, like .ctspawn / .tspawn.
+        private void OnPlayerButtonsChangedHandler(CCSPlayerController player, PlayerButtons pressed, PlayerButtons released)
+        {
+            if (!isPractice || !spawnBeamsShown || (pressed & PlayerButtons.Use) == 0) return;
+            if (!IsPlayerValid(player) || player.IsBot || !player.PawnIsAlive) return;
+            if (player.TeamNum != (byte)CsTeam.Terrorist && player.TeamNum != (byte)CsTeam.CounterTerrorist) return;
+            CCSPlayerPawn? pawn = player.PlayerPawn.Value;
+            Vector? origin = pawn?.AbsOrigin;
+            if (pawn == null || !pawn.IsValid || origin == null) return;
+
+            System.Numerics.Vector3 eye = new(origin.X, origin.Y, origin.Z + pawn.ViewOffset.Z);
+            System.Numerics.Vector3 forward = SpawnPickLogic.Forward(pawn.EyeAngles.X, pawn.EyeAngles.Y);
+
+            byte bestTeam = 0;
+            int bestIndex = -1;
+            float bestDistance = float.MaxValue;
+            foreach (byte teamNum in new[] { (byte)CsTeam.CounterTerrorist, (byte)CsTeam.Terrorist })
+            {
+                if (!spawnsData.TryGetValue(teamNum, out List<Position>? teamSpawns)) continue;
+                var positions = teamSpawns.Select(spawn => new System.Numerics.Vector3(spawn.PlayerPosition.X, spawn.PlayerPosition.Y, spawn.PlayerPosition.Z)).ToList();
+                int index = SpawnPickLogic.FindAimedSpawn(eye, forward, positions);
+                if (index < 0) continue;
+                float distance = System.Numerics.Vector3.Distance(eye, positions[index]);
+                if (distance < bestDistance)
+                {
+                    bestTeam = teamNum;
+                    bestIndex = index;
+                    bestDistance = distance;
+                }
+            }
+            if (bestIndex < 0) return;
+            TeleportToSpawn(player, bestTeam, bestIndex);
         }
 
         [ConsoleCommand("css_god", "Sets Infinite health for player")]
@@ -2039,6 +2075,8 @@ namespace MatchZy
             {
                 ShowSpawnBeam(spawn, Color.Orange);
             }
+            spawnBeamsShown = true;
+            PrintToPlayerChat(player!, Localizer["matchzy.pm.showspawnsuse"]);
         }
 
         [ConsoleCommand("css_hidespawns", "Hides the highlighted spawns")]
@@ -2046,6 +2084,13 @@ namespace MatchZy
         {
             if (!isPractice || !IsPlayerValid(player)) return;
             RemoveSpawnBeams();
+        }
+
+        private void TeleportToSpawn(CCSPlayerController player, byte teamNum, int spawnIndex)
+        {
+            player.PlayerPawn.Value!.Teleport(spawnsData[teamNum][spawnIndex].PlayerPosition, spawnsData[teamNum][spawnIndex].PlayerAngle, new Vector(0, 0, 0));
+            // ReplyToUserCommand(player, $"Moved to spawn: {spawnNumber+1}/{spawnsData[teamNum].Count}");
+            ReplyToUserCommand(player, Localizer["matchzy.pm.movedtospawn", $"{spawnIndex + 1}/{spawnsData[teamNum].Count}"]);
         }
 
         public void TeleportPlayerToBestSpawn(CCSPlayerController player, byte teamNum)
